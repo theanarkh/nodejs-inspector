@@ -108,21 +108,11 @@ class ThreadInspector extends Inspector {
     this.off('NodeWorker.receivedMessageFromWorker', this.receivedMessageFromWorker);
   }
 
-  getSessions(type) {
-    if (type === 'map') {
-      return this._sessions;
-    }
-    const sessions = [];
-    for (const [_, v] of Object.entries(this._sessions)) {
-      sessions.push({
-        pid: process.pid,
-        ...v.getWorkerInfo(),
-      });
-    }
-    return sessions;
+  getSessions() {
+    return this._sessions;
   }
 
-  post(sessionId, message) {
+  postToWorker(sessionId, message) {
     if (!this._sessions[sessionId]) {
         return Promise.reject(new Error('sessionId invalid'));
     }
@@ -130,7 +120,7 @@ class ThreadInspector extends Inspector {
       const requestId = this._id++;
       this._sessions[sessionId].addRequest(requestId, { resolve, reject });
       try {
-        await super.post('NodeWorker.sendMessageToWorker', {
+        await this.post('NodeWorker.sendMessageToWorker', {
           sessionId,
           message: JSON.stringify({
             id: requestId,
@@ -151,7 +141,7 @@ class ThreadInspector extends Inspector {
     this._addListener();
     this.connect();
     try {
-      await super.post("NodeWorker.enable", { waitForDebuggerOnStart: false });
+      await this.post("NodeWorker.enable", { waitForDebuggerOnStart: false });
     } catch(err) {
       // Error(ERR_INSPECTOR_CLOSED) maybe be trigger if NodeWorker.disable is called
       // before NodeWorker.enable callback is called.
@@ -164,7 +154,7 @@ class ThreadInspector extends Inspector {
 
   async stop() {
     try {
-      await super.post("NodeWorker.disable");
+      await this.post("NodeWorker.disable");
     } catch(err) {
       throw err;
     } finally {
@@ -179,25 +169,3 @@ module.exports = {
   ThreadInspector,
   util,
 };
-
-async function test() {
-  const { Worker } = require('worker_threads');
-  const worker = new Worker('setInterval(() => {}, 10000)', { eval: true });
-  const inspector = new ThreadInspector();
-  inspector.on('attachedToWorker', async (sessionContext) => {
-      const { sessionId } = sessionContext.getWorkerInfo();
-      await inspector.post(sessionId, { method: 'Profiler.enable' });
-      await inspector.post(sessionId, { 
-          method: 'Profiler.setSamplingInterval', 
-          params: { interval: 1000 }
-      });
-      await inspector.post(sessionId, { method: 'Profiler.start' });
-      await util.sleep(1000);
-      const { profile } = await inspector.post(sessionId, { method: 'Profiler.stop' });
-      await inspector.stop();
-      worker.terminate();
-  });
-  inspector.start();
-}
-
-test()
