@@ -1,0 +1,22 @@
+{
+  "name": "nodejs-inspector",
+  "version": "1.0.0",
+  "description": "inspector for Node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theanarkh/nodejs-inspector.git"
+  },
+  "author": "theanarkh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/theanarkh/nodejs-inspector/issues"
+  },
+  "homepage": "https://github.com/theanarkh/nodejs-inspector#readme",
+  "devDependencies": {
+    "jest": "^29.0.2"
+  }
+}
