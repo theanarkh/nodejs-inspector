@@ -85,7 +85,11 @@ class ThreadInspector extends Inspector {
           return;
         }
         const request = sessionContext.getRequest(id);
-        if (error) {
+        if (result && result.result && result.result.subtype === 'error') {
+          const error = new Error(result.result.description || JSON.stringify(result));
+          error.code = result.result.className;
+          request.reject(error);
+        } else if (error) {
           const err = new Error(error.message);
           err.code = error.code;
           request.reject(err);
