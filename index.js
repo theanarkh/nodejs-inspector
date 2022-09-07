@@ -36,7 +36,15 @@ class Inspector extends Session {
   post(method, params) {
     return new Promise((resolve, reject) => {
       super.post(method, params, (err, data) => {
-        err ? reject(err) : resolve(data);
+        if (err) {
+          reject(err);
+        } else if (method === 'Runtime.evaluate' && data.result && data.result.subtype === 'error') {
+          const error = new Error(data.result.description || JSON.stringify(data));
+          error.code = data.result.className;
+          reject(error);
+        } else {
+          resolve(data);
+        }
       });
     })
   }
